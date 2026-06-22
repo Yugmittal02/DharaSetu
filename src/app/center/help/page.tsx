@@ -40,8 +40,8 @@ export default function HelpPage() {
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>📞 Need Help?</h2>
           <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 12 }}>Contact DharaSetu Admin for support</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <a href="tel:+919999999999" className="btn btn-gold" style={{ padding: '10px 20px', fontSize: 14 }}>📱 Call Support</a>
-            <a href="https://wa.me/919999999999?text=DharaSetu%20Center%20Support%20Request" target="_blank" className="btn" style={{ padding: '10px 20px', fontSize: 14, background: '#25D366', color: 'white', borderRadius: 8 }}>💬 WhatsApp</a>
+            <a href="tel:+918619152422" className="btn btn-gold" style={{ padding: '10px 20px', fontSize: 14 }}>📱 Call Support</a>
+            <a href="https://wa.me/918619152422?text=DharaSetu%20Center%20Support%20Request" target="_blank" className="btn" style={{ padding: '10px 20px', fontSize: 14, background: '#25D366', color: 'white', borderRadius: 8 }}>💬 WhatsApp</a>
           </div>
         </div>
 
