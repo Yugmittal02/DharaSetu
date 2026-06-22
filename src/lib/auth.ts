@@ -2,7 +2,17 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dharasetu-default-secret';
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret === 'dharasetu-default-secret') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET must be set in production. Do not use the default secret.');
+    }
+    console.warn('⚠️ Using fallback JWT_SECRET. Set JWT_SECRET in .env.local for security.');
+    return 'dharasetu-dev-fallback-secret-not-for-production';
+  }
+  return secret;
+}
 
 export interface JWTPayload {
   userId: string;
@@ -22,12 +32,13 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export function generateToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+  const expiresIn = payload.role === 'operator' ? '12h' : '24h';
+  return jwt.sign(payload, getJwtSecret(), { expiresIn });
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
+    return jwt.verify(token, getJwtSecret()) as JWTPayload;
   } catch {
     return null;
   }

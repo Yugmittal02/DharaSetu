@@ -5,9 +5,38 @@ import Operator from '@/lib/models/Operator';
 import Settings from '@/lib/models/Settings';
 import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
 
+// Simple in-memory rate limiter
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = loginAttempts.get(ip);
+  if (!record || now - record.firstAttempt > RATE_LIMIT_WINDOW) {
+    loginAttempts.set(ip, { count: 1, firstAttempt: now });
+    return true;
+  }
+  record.count++;
+  return record.count <= RATE_LIMIT_MAX;
+}
+
+// Cleanup stale entries every 15 min
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, rec] of loginAttempts) {
+    if (now - rec.firstAttempt > RATE_LIMIT_WINDOW) loginAttempts.delete(ip);
+  }
+}, RATE_LIMIT_WINDOW);
+
 // POST /api/auth/login
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json({ error: 'Too many login attempts. Please try again after 15 minutes.' }, { status: 429 });
+    }
+
     await dbConnect();
     const body = await req.json();
     const { mobile, password, operatorId, loginType, action, newPin } = body;
