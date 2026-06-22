@@ -105,7 +105,14 @@ export default function AddFarmerPage() {
     }
   };
 
+  // Auto scroll to top on step change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step]);
+
   if (isLoading || !user) return null;
+
+  const progressPercent = Math.round((step / (STEPS.length - 1)) * 100);
 
   // Receipt Print/Download
   const handlePrintReceipt = () => {
@@ -320,8 +327,26 @@ export default function AddFarmerPage() {
     <>
       <CenterSidebar />
       <div className="main-content">
-        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Add New Farmer</h1>
-        <p style={{ fontSize: 14, color: '#64748B', marginBottom: 20 }}>Wallet: {formatCurrency(walletBalance)}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 4 }}>Add New Farmer</h1>
+            <p style={{ fontSize: 14, color: '#64748B' }}>Wallet: {formatCurrency(walletBalance)}</p>
+          </div>
+          <span style={{ background: '#064E3B', color: 'white', padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
+            Step {step + 1}/{STEPS.length}
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 11, color: '#64748B' }}>
+            <span>{STEPS[step]}</span>
+            <span>{progressPercent}% complete</span>
+          </div>
+          <div style={{ height: 6, background: '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${progressPercent}%`, background: 'linear-gradient(90deg, #064E3B, #059669)', borderRadius: 3, transition: 'width 0.4s ease' }} />
+          </div>
+        </div>
 
         {error && <div className="alert-banner alert-error" style={{ marginBottom: 16 }}>⚠️ {error}</div>}
 
@@ -329,7 +354,11 @@ export default function AddFarmerPage() {
         <div className="stepper">
           {STEPS.map((s, i) => (
             <div key={s} style={{ display: 'flex', alignItems: 'center' }}>
-              <div className={`step ${i === step ? 'active' : i < step ? 'completed' : 'upcoming'}`}>
+              <div
+                className={`step ${i === step ? 'active' : i < step ? 'completed' : 'upcoming'}`}
+                style={{ cursor: i < step ? 'pointer' : 'default' }}
+                onClick={() => { if (i < step) setStep(i); }}
+              >
                 {i < step ? '✓' : i + 1}. {s}
               </div>
               {i < STEPS.length - 1 && <div className="step-connector" />}
