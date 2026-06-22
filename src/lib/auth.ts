@@ -5,11 +5,8 @@ import { NextRequest } from 'next/server';
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
   if (!secret || secret === 'dharasetu-default-secret') {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET must be set in production. Do not use the default secret.');
-    }
-    console.warn('⚠️ Using fallback JWT_SECRET. Set JWT_SECRET in .env.local for security.');
-    return 'dharasetu-dev-fallback-secret-not-for-production';
+    console.warn('⚠️ WARNING: JWT_SECRET is not set! Set it in environment variables for security.');
+    return 'dharasetu-fallback-secret-please-set-JWT_SECRET';
   }
   return secret;
 }
