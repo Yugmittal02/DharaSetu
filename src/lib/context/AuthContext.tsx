@@ -60,6 +60,7 @@ export function AuthProvider({ children, storageKey = 'dharasetu' }: { children:
   const logout = useCallback(() => {
     localStorage.removeItem(`${storageKey}_token`);
     localStorage.removeItem(`${storageKey}_user`);
+    localStorage.removeItem('dharasetu_center_credentials');
     setToken(null);
     setUser(null);
   }, [storageKey]);

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/context/AuthContext';
 import { apiRequest } from '@/lib/api';
+import { useEffect } from 'react';
 
 export default function CenterLoginPage() {
   const [operatorId, setOperatorId] = useState('');
@@ -17,6 +18,23 @@ export default function CenterLoginPage() {
 
   const router = useRouter();
   const { login } = useAuth();
+
+  useEffect(() => {
+    const credsStr = localStorage.getItem('dharasetu_center_credentials');
+    if (credsStr) {
+      try {
+        const creds = JSON.parse(credsStr);
+        if (creds.operatorId && creds.mobile) {
+          setOperatorId(creds.operatorId);
+          setMobile(creds.mobile);
+          setOperatorDetails({ operatorName: creds.operatorName || '', shopName: creds.shopName || '' });
+          setStep('login');
+        }
+      } catch (e) {
+        // Ignore JSON parse errors
+      }
+    }
+  }, []);
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +53,12 @@ export default function CenterLoginPage() {
         setStep('login');
       } else {
         // First login, auto logged in
+        localStorage.setItem('dharasetu_center_credentials', JSON.stringify({
+          operatorId,
+          mobile,
+          operatorName: data.operatorName,
+          shopName: data.shopName
+        }));
         login(data.token, data.user);
         router.push('/center/dashboard');
       }
@@ -57,6 +81,12 @@ export default function CenterLoginPage() {
       });
       
       login(data.token, data.user);
+      localStorage.setItem('dharasetu_center_credentials', JSON.stringify({
+        operatorId,
+        mobile,
+        operatorName: operatorDetails?.operatorName || data.user.name || '',
+        shopName: operatorDetails?.shopName || data.user.shopName || ''
+      }));
       router.push('/center/dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed');
