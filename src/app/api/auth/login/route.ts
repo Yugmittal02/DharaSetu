@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import User from '@/lib/models/User';
 import Operator from '@/lib/models/Operator';
-import Settings from '@/lib/models/Settings';
 import { hashPassword, verifyPassword, generateToken } from '@/lib/auth';
 
 // Simple in-memory rate limiter
@@ -12,6 +11,12 @@ const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
+  // Cleanup stale entries inline
+  if (loginAttempts.size > 100) {
+    for (const [k, v] of loginAttempts) {
+      if (now - v.firstAttempt > RATE_LIMIT_WINDOW) loginAttempts.delete(k);
+    }
+  }
   const record = loginAttempts.get(ip);
   if (!record || now - record.firstAttempt > RATE_LIMIT_WINDOW) {
     loginAttempts.set(ip, { count: 1, firstAttempt: now });
@@ -20,14 +25,6 @@ function checkRateLimit(ip: string): boolean {
   record.count++;
   return record.count <= RATE_LIMIT_MAX;
 }
-
-// Cleanup stale entries every 15 min
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, rec] of loginAttempts) {
-    if (now - rec.firstAttempt > RATE_LIMIT_WINDOW) loginAttempts.delete(ip);
-  }
-}, RATE_LIMIT_WINDOW);
 
 // POST /api/auth/login
 export async function POST(req: NextRequest) {
@@ -251,10 +248,19 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: unknown) {
     console.error('Login error:', error);
-    const errMsg = error instanceof Error ? error.message : '';
+    const errMsg = error instanceof Error ? error.message : String(error);
+    
+    // Check for missing env variables
+    if (errMsg.includes('MONGODB_URI')) {
+      return NextResponse.json({ error: 'Configuration Error: MONGODB_URI environment variable is missing on the server.' }, { status: 500 });
+    }
+    
+    // Check for connection issues
     if (errMsg.includes('Could not connect') || errMsg.includes('ServerSelection') || errMsg.includes('ECONNREFUSED')) {
       return NextResponse.json({ error: 'Database connection failed. Please check your internet connection and MongoDB Atlas IP whitelist.' }, { status: 503 });
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    
+    // Expose the actual error message to help debug
+    return NextResponse.json({ error: `Server error: ${errMsg}` }, { status: 500 });
   }
 }
